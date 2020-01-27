@@ -1,16 +1,21 @@
 package com.example.exampleArj;
 
+import com.sun.scenario.effect.impl.sw.sse.SSEBlend_SRC_OUTPeer;
+import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.ArchiveStreamFactory;
 import org.apache.commons.compress.archivers.arj.ArjArchiveEntry;
+import org.apache.commons.compress.archivers.arj.ArjArchiveInputStream;
+import org.apache.commons.io.IOUtils;
 
 import java.io.*;
+import java.nio.file.Files;
 
 public class ArjArchive {
 
     public static void main(String[] args) throws IOException, ArchiveException {
-        new ArjArchive().unzip("c:/1.arj", "c:/exampleOne1/");
+        new ArjArchive().unzip("c:/5.arj", "C:/Users/1/Desktop/files");
     }
 
     private static String getDir(ArjArchiveEntry entry) {
@@ -21,52 +26,36 @@ public class ArjArchive {
 
     public void unzip(String src, String dir) throws IOException, ArchiveException {
 
-        ArjArchiveEntry entry = new ArjArchiveEntry();
         InputStream is = new FileInputStream(new File(src));
-        ArchiveInputStream in = new ArchiveStreamFactory().createArchiveInputStream(ArchiveStreamFactory.ARJ, is);
-        OutputStream out = null;
-        System.out.println(entry.getSize());
-        System.out.println(entry.getMode());
-
-        while (true) {
-
-            try {
-                entry = (ArjArchiveEntry) in.getNextEntry();
 
 
-                if (entry != null) {
 
+        try (ArjArchiveInputStream i = new ArjArchiveInputStream(new FileInputStream(new File(src)))) {
+            ArchiveEntry entry = null;
 
-                    System.out.println("Extraction  " + entry.getName());
-
-                    File filedir = new File(dir + getDir(entry));
-                    if (!filedir.exists()) {
-                        filedir.mkdirs();
-                    }
-                    out = new FileOutputStream(new File(dir + entry.getName()));
-
-                    //FileUtils.copyFile(filedir, out);
-                    try {
-                        //  copy(in, out);
-
-                        byte[] buffer = new byte[1024];
-                        int length;
-                        while ((length = in.read(buffer)) > 0) {
-                            out.write(buffer, 0, length);
-                        }
-                    } catch (IOException e) {
-                        e.getStackTrace();
-                    }
-
-
-                } else {
-                    System.out.println("Checkout complete");
-                    //in.close();
+            while ((entry = i.getNextEntry()) != null) {
+                if (!i.canReadEntryData(entry)) {
+                    System.out.println("Error: can't read" + entry.getName());
+                    continue;
                 }
-            } catch (IOException e) {
-                e.getStackTrace();
+                String name = dir + entry.getName();
+                File f = new File(name);
+                if (entry.isDirectory()) {
+                    if (!f.isDirectory() && !f.mkdirs()) {
+                        throw new IOException("failed to create directory " + f);
+                    }
+                } else {
+                    File parent = f.getParentFile();
+                    if (!parent.isDirectory() && !parent.mkdirs()) {
+                        throw new IOException("failed to create directory " + parent);
+                    }
+                    try (OutputStream o = Files.newOutputStream(f.toPath())) {
+                       IOUtils.copy(i, o);
+
+                        }
+                    }
+                }
             }
         }
-
     }
-}
+
