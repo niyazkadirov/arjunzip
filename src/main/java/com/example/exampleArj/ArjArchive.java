@@ -7,8 +7,6 @@ import org.apache.commons.compress.archivers.arj.ArjArchiveEntry;
 
 import java.io.*;
 
-import static org.apache.commons.compress.utils.IOUtils.copy;
-
 public class ArjArchive {
 
     public static void main(String[] args) throws IOException, ArchiveException {
@@ -42,14 +40,20 @@ public class ArjArchive {
                     System.out.println("Extraction  " + entry.getName());
 
                     File filedir = new File(dir + getDir(entry));
-                    //if (!filedir.exists()) {
-                            filedir.mkdirs();
-                    //}
+                    if (!filedir.exists()) {
+                        filedir.mkdirs();
+                    }
                     out = new FileOutputStream(new File(dir + entry.getName()));
 
                     //FileUtils.copyFile(filedir, out);
                     try {
-                        copy(in, out);
+                        //  copy(in, out);
+
+                        byte[] buffer = new byte[1024];
+                        int length;
+                        while ((length = in.read(buffer)) > 0) {
+                            out.write(buffer, 0, length);
+                        }
                     } catch (IOException e) {
                         e.getStackTrace();
                     }
